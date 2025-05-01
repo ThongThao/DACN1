@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Trang chủ{% endblock %}
+
+{% block content %}
+{% if not user.is_authenticated %}
+<div class="card">
+    <div class="card-body text-center">
+        <h3>Chào mừng đến với hệ thống quản lý bãi xe</h3>
+        <p>Vui lòng đăng nhập để tiếp tục</p>
+        <a href="{% url 'login' %}" class="btn btn-primary">Đăng nhập</a>
+        <a href="{% url 'register' %}" class="btn btn-secondary">Đăng ký</a>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-header">
+        <h3>Tổng quan hệ thống</h3>
+    </div>
+    <div class="card-body">
+        <div class="stats-container">
+            <div class="stat-card">
+                <h4>Xe trong bãi</h4>
+                <p class="stat-value">125</p>
+            </div>
+            <div class="stat-card">
+                <h4>Doanh thu hôm nay</h4>
+                <p class="stat-value">5,250,000 VND</p>
+            </div>
+            <div class="stat-card">
+                <h4>Nhân viên đang làm</h4>
+                <p class="stat-value">3</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Hoạt động gần đây</h3>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Thời gian</th>
+                    <th>Biển số</th>
+                    <th>Loại xe</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>10:25 15/06/2023</td>
+                    <td>51A-12345</td>
+                    <td>Xe máy</td>
+                    <td>Vào bãi</td>
+                </tr>
+                <tr>
+                    <td>10:20 15/06/2023</td>
+                    <td>30A-54321</td>
+                    <td>Ô tô</td>
+                    <td>Ra bãi</td>
+                </tr>
+                <tr>
+                    <td>10:15 15/06/2023</td>
+                    <td>29A-98765</td>
+                    <td>Xe máy</td>
+                    <td>Vào bãi</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

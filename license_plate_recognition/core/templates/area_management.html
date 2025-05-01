@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% load static currency_tags %}
+
+{% block title %}Quản lý khu vực{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>Danh sách khu vực</h3>
+        <button class="btn btn-primary" 
+                data-bs-toggle="modal" 
+                data-bs-target="#createAreaModal"
+                {% if not request.user.is_superuser %}disabled title="Chỉ admin mới có thể thêm khu vực"{% endif %}>
+            Thêm khu vực
+        </button>
+    </div>
+    <div class="card-body">
+        {% if not vehicle_types %}
+            <div class="alert alert-warning">Không có loại xe nào. Vui lòng thêm loại xe trước.</div>
+        {% endif %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Tên khu vực</th>
+                    <th>Số chỗ</th>
+                    <th>Loại xe</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for area in parking_areas %}
+                    <tr>
+                        <td>{{ area.id }}</td>
+                        <td>{{ area.name }}</td>
+                        <td>{{ area.current_occupancy }}/{{ area.max_capacity }}</td>
+                        <td>{{ area.vehicle_type.name }}</td>
+                        <td>{{ area.get_status_display }}</td>
+                        <td>
+                            <button class="btn btn-primary btn-sm" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editAreaModal"
+                                    data-id="{{ area.id }}"
+                                    data-name="{{ area.name }}"
+                                    data-max-capacity="{{ area.max_capacity }}"
+                                    data-vehicle-type="{{ area.vehicle_type.id }}" 
+                                    data-status="{{ area.status }}"
+                                    {% if not request.user.is_superuser %}disabled title="Chỉ admin mới có thể sửa khu vực"{% endif %}>
+                                Sửa
+                            </button>
+                            <form action="{% url 'area_management' %}" method="POST" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="area_id" value="{{ area.id }}">
+                                <button type="submit" 
+                                        class="btn btn-danger btn-sm" 
+                                        onclick="return confirm('Bạn có chắc muốn xóa khu vực này?');"
+                                        {% if not request.user.is_superuser %}disabled title="Chỉ admin mới có thể xóa khu vực"{% endif %}>
+                                    Xóa
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">Không có khu vực nào.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create Area Modal -->
+<div class="modal fade" id="createAreaModal" tabindex="-1" aria-labelledby="createAreaModalLabel" aria-hidden="true" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createAreaModalLabel">Thêm khu vực</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'area_management' %}" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create">
+                    {% if create_form.errors %}
+                        <div class="alert alert-danger">
+                            {% for field, errors in create_form.errors.items %}
+                                {{ field }}: {{ errors }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label for="create_name" class="form-label">Tên khu vực</label>
+                        <input type="text" class="form-control" id="create_name" name="name" value="{{ create_form.name.value|default:'' }}" placeholder="Nhập tên khu vực">
+                        {% if create_form.name.errors %}
+                            <div class="text-danger">{{ create_form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="create_max_capacity" class="form-label">Sức chứa tối đa</label>
+                        <input type="number" min="1" class="form-control" id="create_max_capacity" name="max_capacity" value="{{ create_form.max_capacity.value|default:'' }}">
+                        {% if create_form.max_capacity.errors %}
+                            <div class="text-danger">{{ create_form.max_capacity.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="create_vehicle_type" class="form-label">Loại xe</label>
+                        <select class="form-control" id="create_vehicle_type" name="vehicle_type">
+                            {% for vehicle_type in vehicle_types %}
+                                <option value="{{ vehicle_type.id }}" {% if create_form.vehicle_type.value == vehicle_type.id|stringformat:"s" %}selected{% endif %}>{{ vehicle_type.name }}</option>
+                            {% empty %}
+                                <option value="" disabled selected>Không có loại xe nào</option>
+                            {% endfor %}
+                        </select>
+                        {% if create_form.vehicle_type.errors %}
+                            <div class="text-danger">{{ create_form.vehicle_type.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="create_status" class="form-label">Trạng thái</label>
+                        <select class="form-control" id="create_status" name="status">
+                            {% for value, label in create_form.status.field.choices %}
+                                <option value="{{ value }}" {% if create_form.status.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if create_form.status.errors %}
+                            <div class="text-danger">{{ create_form.status.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary" {% if not vehicle_types %}disabled title="Cần có ít nhất một loại xe"{% endif %}>Tạo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Area Modal -->
+<div class="modal fade" id="editAreaModal" tabindex="-1" aria-labelledby="editAreaModalLabel" aria-hidden="true" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editAreaModalLabel">Sửa khu vực</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'area_management' %}" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="area_id" id="edit_area_id">
+                    {% if edit_form.errors %}
+                        <div class="alert alert-danger">
+                            {% for field, errors in edit_form.errors.items %}
+                                {{ field }}: {{ errors }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Tên khu vực</label>
+                        <input type="text" class="form-control" id="edit_name" name="name" value="{{ edit_form.name.value|default:'' }}" placeholder="Nhập tên khu vực">
+                        {% if edit_form.name.errors %}
+                            <div class="text-danger">{{ edit_form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_max_capacity" class="form-label">Sức chứa tối đa</label>
+                        <input type="number" min="1" class="form-control" id="edit_max_capacity" name="max_capacity" value="{{ edit_form.max_capacity.value|default:'' }}">
+                        {% if edit_form.max_capacity.errors %}
+                            <div class="text-danger">{{ edit_form.max_capacity.errors }}</div> <!-- Sửa lỗi -->
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_vehicle_type" class="form-label">Loại xe</label>
+                        <select class="form-control" id="edit_vehicle_type" name="vehicle_type">
+                            {% for vehicle_type in vehicle_types %}
+                                <option value="{{ vehicle_type.id }}" {% if edit_form.vehicle_type.value == vehicle_type.id|stringformat:"s" %}selected{% endif %}>{{ vehicle_type.name }}</option>
+                            {% empty %}
+                                <option value="" disabled selected>Không có loại xe nào</option>
+                            {% endfor %}
+                        </select>
+                        {% if edit_form.vehicle_type.errors %}
+                            <div class="text-danger">{{ edit_form.vehicle_type.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_status" class="form-label">Trạng thái</label>
+                        <select class="form-control" id="edit_status" name="status">
+                            {% for value, label in edit_form.status.field.choices %}
+                                <option value="{{ value }}" {% if edit_form.status.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if edit_form.status.errors %}
+                            <div class="text-danger">{{ edit_form.status.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary" {% if not vehicle_types %}disabled title="Cần có ít nhất một loại xe"{% endif %}>Lưu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var editModal = document.getElementById('editAreaModal');
+    editModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var id = button.getAttribute('data-id') || '';
+        var name = button.getAttribute('data-name') || '';
+        var maxCapacity = button.getAttribute('data-max-capacity') || '';
+        var vehicleType = button.getAttribute('data-vehicle-type') || ''; // Lấy id của vehicle_type
+        var status = button.getAttribute('data-status') || '';
+
+        var modal = editModal;
+        modal.querySelector('#edit_area_id').value = id;
+        modal.querySelector('#edit_name').value = name;
+        modal.querySelector('#edit_max_capacity').value = maxCapacity;
+        modal.querySelector('#edit_vehicle_type').value = vehicleType; // Gán id
+        modal.querySelector('#edit_status').value = status;
+    });
+
+    editModal.addEventListener('hidden.bs.modal', function () {
+        var form = editModal.querySelector('form');
+        form.reset();
+    });
+});
+</script>
+{% endblock %}

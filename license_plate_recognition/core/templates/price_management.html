@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quản lý giá xe{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>Bảng giá dịch vụ</h3>
+        <button class="btn btn-primary" 
+                data-bs-toggle="modal" 
+                data-bs-target="#createPriceModal"
+                {% if not request.user.is_superuser %}disabled title="Chỉ admin mới có thể thêm giá"{% endif %}>
+            Thêm loại xe
+        </button>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Loại xe</th>
+                    <th>Giá đầu tiên (1h)</th>
+                    <th>Giá tiếp theo (/30 phút)</th>
+                    <th>Giá qua đêm</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vehicle_type in vehicle_types %}
+                    <tr>
+                        <td>{{ vehicle_type.name }}</td>
+                        <td>{{ vehicle_type.first_hour_price|floatformat:0 }} VND</td>
+                        <td>{{ vehicle_type.additional_price|floatformat:0 }} VND</td>
+                        <td>{{ vehicle_type.overnight_price|floatformat:0 }} VND</td>
+                        <td>
+                            <button class="btn btn-primary btn-sm" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editPriceModal"
+                                    data-id="{{ vehicle_type.id }}"
+                                    data-name="{{ vehicle_type.name }}"
+                                    data-first-hour-price="{{ vehicle_type.first_hour_price }}"
+                                    data-additional-price="{{ vehicle_type.additional_price }}"
+                                    data-overnight-price="{{ vehicle_type.overnight_price }}"
+                                    {% if not request.user.is_superuser %}disabled title="Chỉ admin mới có thể sửa giá"{% endif %}>
+                                Sửa
+                            </button>
+                            <form action="{% url 'price_management' %}" method="POST" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="vehicle_type_id" value="{{ vehicle_type.id }}">
+                                <button type="submit" 
+                                        class="btn btn-danger btn-sm" 
+                                        onclick="return confirm('Bạn có chắc muốn xóa loại xe này?');"
+                                        {% if not request.user.is_superuser %}disabled title="Chỉ admin mới có thể xóa giá"{% endif %}>
+                                    Xóa
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">Không có loại xe nào.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create Price Modal -->
+<div class="modal fade" id="createPriceModal" tabindex="-1" aria-labelledby="createPriceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createPriceModalLabel">Thêm loại xe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'price_management' %}" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create">
+                    {% if create_form.errors %}
+                        <div class="alert alert-danger">
+                            {% for field, errors in create_form.errors.items %}
+                                {{ field }}: {{ errors }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label for="create_name" class="form-label">Tên loại xe</label>
+                        <input type="text" class="form-control" id="create_name" name="name" value="{{ create_form.name.value|default:'' }}" placeholder="Nhập tên loại xe">
+                        {% if create_form.name.errors %}
+                            <div class="text-danger">{{ create_form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="create_first_hour_price" class="form-label">Giá đầu tiên (1h)</label>
+                        <input type="number" step="0.01" class="form-control" id="create_first_hour_price" name="first_hour_price" value="{{ create_form.first_hour_price.value|default:'' }}">
+                        {% if create_form.first_hour_price.errors %}
+                            <div class="text-danger">{{ create_form.first_hour_price.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="create_additional_price" class="form-label">Giá tiếp theo (/30 phút)</label>
+                        <input type="number" step="0.01" class="form-control" id="create_additional_price" name="additional_price" value="{{ create_form.additional_price.value|default:'' }}">
+                        {% if create_form.additional_price.errors %}
+                            <div class="text-danger">{{ create_form.additional_price.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="create_overnight_price" class="form-label">Giá qua đêm</label>
+                        <input type="number" step="0.01" class="form-control" id="create_overnight_price" name="overnight_price" value="{{ create_form.overnight_price.value|default:'' }}">
+                        {% if create_form.overnight_price.errors %}
+                            <div class="text-danger">{{ create_form.overnight_price.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary">Tạo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Price Modal -->
+<div class="modal fade" id="editPriceModal" tabindex="-1" aria-labelledby="editPriceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editPriceModalLabel">Sửa giá xe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'price_management' %}" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="vehicle_type_id" id="edit_vehicle_type_id">
+                    {% if edit_form.errors %}
+                        <div class="alert alert-danger">
+                            {% for field, errors in edit_form.errors.items %}
+                                {{ field }}: {{ errors }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Tên loại xe</label>
+                        <input type="text" class="form-control" id="edit_name" name="name" value="{{ edit_form.name.value|default:'' }}" placeholder="Nhập tên loại xe">
+                        {% if edit_form.name.errors %}
+                            <div class="text-danger">{{ edit_form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_first_hour_price" class="form-label">Giá đầu tiên (1h)</label>
+                        <input type="number" step="0.01" class="form-control" id="edit_first_hour_price" name="first_hour_price" value="{{ edit_form.first_hour_price.value|default:'' }}">
+                        {% if edit_form.first_hour_price.errors %}
+                            <div class="text-danger">{{ edit_form.first_hour_price.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_additional_price" class="form-label">Giá tiếp theo (/30 phút)</label>
+                        <input type="number" step="0.01" class="form-control" id="edit_additional_price" name="additional_price" value="{{ edit_form.additional_price.value|default:'' }}">
+                        {% if edit_form.additional_price.errors %}
+                            <div class="text-danger">{{ edit_form.additional_price.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_overnight_price" class="form-label">Giá qua đêm</label>
+                        <input type="number" step="0.01" class="form-control" id="edit_overnight_price" name="overnight_price" value="{{ edit_form.overnight_price.value|default:'' }}">
+                        {% if edit_form.overnight_price.errors %}
+                            <div class="text-danger">{{ edit_form.overnight_price.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary">Lưu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var editModal = document.getElementById('editPriceModal');
+    editModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var id = button.getAttribute('data-id') || '';
+        var name = button.getAttribute('data-name') || '';
+        var firstHourPrice = button.getAttribute('data-first-hour-price') || '';
+        var additionalPrice = button.getAttribute('data-additional-price') || '';
+        var overnightPrice = button.getAttribute('data-overnight-price') || '';
+
+        var modal = editModal;
+        modal.querySelector('#edit_vehicle_type_id').value = id;
+        modal.querySelector('#edit_name').value = name;
+        modal.querySelector('#edit_first_hour_price').value = firstHourPrice;
+        modal.querySelector('#edit_additional_price').value = additionalPrice;
+        modal.querySelector('#edit_overnight_price').value = overnightPrice;
+    });
+});
+</script>
+{% endblock %}

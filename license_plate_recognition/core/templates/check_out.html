@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Thanh toán xe ra{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>Thanh toán xe ra</h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="camera">Camera nhận diện biển số</label>
+                    <div class="camera-preview" style="border: 2px dashed #ccc; height: 200px; display: flex; justify-content: center; align-items: center;">
+                        <p>Khu vực hiển thị camera</p>
+                    </div>
+                    <button class="btn btn-primary mt-2">Chụp ảnh</button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="licensePlate">Biển số xe</label>
+                    <input type="text" class="form-control" id="licensePlate" placeholder="Nhập hoặc tự động nhận diện">
+                </div>
+                
+                <div class="payment-info">
+                    <h4>Thông tin thanh toán</h4>
+                    <div class="info-row">
+                        <span>Thời gian vào:</span>
+                        <span>10:25 15/06/2023</span>
+                    </div>
+                    <div class="info-row">
+                        <span>Thời gian ra:</span>
+                        <span>12:40 15/06/2023</span>
+                    </div>
+                    <div class="info-row">
+                        <span>Tổng thời gian:</span>
+                        <span>2 giờ 15 phút</span>
+                    </div>
+                    <div class="info-row">
+                        <span>Loại xe:</span>
+                        <span>Xe máy</span>
+                    </div>
+                    <div class="info-row">
+                        <span>Tổng tiền:</span>
+                        <span class="total-amount">9,000 VND</span>
+                    </div>
+                </div>
+                
+                <button class="btn btn-success">Xác nhận thanh toán</button>
+                <button class="btn btn-primary">In hóa đơn</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Thêm script xử lý nhận diện biển số xe nếu cần
+</script>
+{% endblock %}

@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quản lý nhân viên{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>Danh sách nhân viên</h3>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Họ tên</th>
+                    <th>SĐT</th>
+                    <th>Địa chỉ</th>
+                    <th>Ca làm</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for staff in staff_list %}
+                    <tr>
+                        <td>{{ staff.user.id }}</td>
+                        <td>{{ staff.full_name|default:"" }}</td>
+                        <td>{{ staff.phone|default:"" }}</td>
+                        <td>{{ staff.address|default:"" }}</td>
+                        <td>{{ staff.get_shift_display|default:"" }}</td>
+                        <td>
+                            <button class="btn btn-primary btn-sm" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editStaffModal"
+                                    data-user-id="{{ staff.user.id }}"
+                                    data-full-name="{{ staff.full_name|default:'' }}"
+                                    data-phone="{{ staff.phone|default:'' }}"
+                                    data-address="{{ staff.address|default:'' }}"
+                                    data-shift="{{ staff.shift|default:'' }}"
+                                    {% if not request.user.is_superuser %}disabled title="Chỉ admin mới có thể sửa nhân viên"{% endif %}>
+                                Sửa
+                            </button>
+                            <form action="{% url 'staff_management' %}" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="user_id" value="{{ staff.user.id }}">
+                                <button type="submit" 
+                                        class="btn btn-danger btn-sm" 
+                                        onclick="return confirm('Bạn có chắc muốn xóa nhân viên này?');"
+                                        {% if not request.user.is_superuser %}disabled title="Chỉ admin mới có thể xóa nhân viên"{% endif %}>
+                                    Xóa
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">Không có nhân viên nào.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Trước</a>
+                        </li>
+                    {% endif %}
+                    {% for num in page_obj.paginator.page_range %}
+                        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endfor %}
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Sau</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+</div>
+
+
+
+<!-- Edit Staff Modal -->
+<div class="modal fade" id="editStaffModal" tabindex="-1" aria-labelledby="editStaffModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editStaffModalLabel">Sửa nhân viên</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'staff_management' %}" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="user_id" id="edit_user_id">
+                    {% if edit_form.errors or staff_edit_form.errors %}
+                        <div class="alert alert-danger">
+                            {% for field, errors in edit_form.errors.items %}
+                                {{ field }}: {{ errors }}
+                            {% endfor %}
+                            {% for field, errors in staff_edit_form.errors.items %}
+                                {{ field }}: {{ errors }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <!-- UserEditForm Fields -->
+                    <div class="mb-3">
+                        <label for="edit_full_name" class="form-label">{{ edit_form.full_name.label }}</label>
+                        <input type="text" class="form-control" id="edit_full_name" name="full_name" value="{{ edit_form.full_name.value|default:'' }}">
+                        {% if edit_form.full_name.errors %}
+                            <div class="text-danger">{{ edit_form.full_name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_phone" class="form-label">{{ edit_form.phone.label }}</label>
+                        <input type="text" class="form-control" id="edit_phone" name="phone" value="{{ edit_form.phone.value|default:'' }}">
+                        {% if edit_form.phone.errors %}
+                            <div class="text-danger">{{ edit_form.phone.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_email" class="form-label">{{ edit_form.email.label }}</label>
+                        <input type="email" class="form-control" id="edit_email" name="email" value="{{ edit_form.email.value|default:'' }}">
+                        {% if edit_form.email.errors %}
+                            <div class="text-danger">{{ edit_form.email.errors }}</div>
+                        {% endif %}
+                    </div>
+                
+                    <!-- StaffEditForm Fields -->
+                    <div class="mb-3">
+                        <label for="edit_address" class="form-label">{{ staff_edit_form.address.label }}</label>
+                        <textarea class="form-control" id="edit_address" name="address">{{ staff_edit_form.address.value|default:'' }}</textarea>
+                        {% if staff_edit_form.address.errors %}
+                            <div class="text-danger">{{ staff_edit_form.address.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_shift" class="form-label">{{ staff_edit_form.shift.label }}</label>
+                        <select class="form-control" id="edit_shift" name="shift">
+                            {% for value, label in staff_edit_form.shift.field.choices %}
+                                <option value="{{ value }}" {% if staff_edit_form.shift.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if staff_edit_form.shift.errors %}
+                            <div class="text-danger">{{ staff_edit_form.shift.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_date" class="form-label">{{ staff_edit_form.date.label }}</label>
+                        <input type="date" class="form-control" id="edit_date" name="date" value="{{ staff_edit_form.date.value|default:'' }}">
+                        {% if staff_edit_form.date.errors %}
+                            <div class="text-danger">{{ staff_edit_form.date.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="edit_schedule_status" name="schedule_status" {% if staff_edit_form.schedule_status.value %}checked{% endif %}>
+                        <label for="edit_schedule_status" class="form-check-label">{{ staff_edit_form.schedule_status.label }}</label>
+                        {% if staff_edit_form.schedule_status.errors %}
+                            <div class="text-danger">{{ staff_edit_form.schedule_status.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary">Lưu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var editModal = document.getElementById('editStaffModal');
+    editModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var userId = button.getAttribute('data-user-id') || '';
+        var fullName = button.getAttribute('data-full-name') || '';
+        var phone = button.getAttribute('data-phone') || '';
+        var email = button.getAttribute('data-email') || '';
+        var isStaff = button.getAttribute('data-is-staff') === 'true';
+        var address = button.getAttribute('data-address') || '';
+        var shift = button.getAttribute('data-shift') || '';
+        var date = button.getAttribute('data-date') || '';
+        var scheduleStatus = button.getAttribute('data-schedule-status') === 'true';
+
+        var modal = editModal;
+        modal.querySelector('#edit_user_id').value = userId;
+        modal.querySelector('#edit_full_name').value = fullName;
+        modal.querySelector('#edit_phone').value = phone;
+        modal.querySelector('#edit_email').value = email;
+        modal.querySelector('#edit_is_staff').checked = isStaff;
+        modal.querySelector('#edit_address').value = address;
+        modal.querySelector('#edit_shift').value = shift;
+        modal.querySelector('#edit_date').value = date;
+        modal.querySelector('#edit_schedule_status').checked = scheduleStatus;
+    });
+});
+</script>
+{% endblock %}

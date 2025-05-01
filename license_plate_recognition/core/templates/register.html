@@ -1,0 +1,88 @@
+{% extends 'auth_base.html' %}
+{% load static %}
+{% load form_tags %}
+
+{% block title %}Đăng ký tài khoản{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+    <div class="auth-header">
+        <img src="{% static 'images/logo.png' %}" alt="Logo" class="auth-logo">
+        <h2>Đăng ký tài khoản</h2>
+    </div>
+
+    <form method="post" class="auth-form">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Tên đăng nhập -->
+        <div class="form-group">
+            <label for="{{ form.username.id_for_label }}">Tên đăng nhập</label>
+            {{ form.username|add_error_class:form.username }}
+            {% for error in form.username.errors %}
+                <div class="invalid-feedback d-block text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+            <label for="{{ form.email.id_for_label }}">Email</label>
+            {{ form.email|add_error_class:form.email }}
+            {% for error in form.email.errors %}
+                <div class="invalid-feedback d-block text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <!-- Họ tên đầy đủ -->
+        <div class="form-group">
+            <label for="{{ form.full_name.id_for_label }}">Họ tên</label>
+            {{ form.full_name|add_error_class:form.full_name }}
+            {% for error in form.full_name.errors %}
+                <div class="invalid-feedback d-block text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <!-- Số điện thoại -->
+        <div class="form-group">
+            <label for="{{ form.phone.id_for_label }}">Số điện thoại</label>
+            {{ form.phone|add_error_class:form.phone }}
+            {% for error in form.phone.errors %}
+                <div class="invalid-feedback d-block text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <!-- Mật khẩu -->
+        <div class="form-group">
+            <label for="{{ form.password1.id_for_label }}">Mật khẩu</label>
+            {{ form.password1|add_error_class:form.password1 }}
+            {% for error in form.password1.errors %}
+                <div class="invalid-feedback d-block text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <!-- Xác nhận mật khẩu -->
+        <div class="form-group">
+            <label for="{{ form.password2.id_for_label }}">Xác nhận mật khẩu</label>
+            {{ form.password2|add_error_class:form.password2 }}
+            {% for error in form.password2.errors %}
+                <div class="invalid-feedback d-block text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <!-- Nút đăng ký -->
+        <button type="submit" class="btn btn-primary btn-block">Đăng ký</button>
+
+        <!-- Link chuyển sang đăng nhập -->
+        <div class="auth-links mt-3 text-center">
+            <a href="{% url 'login' %}">Đã có tài khoản? Đăng nhập</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

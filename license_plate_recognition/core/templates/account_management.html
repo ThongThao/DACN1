@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quản lý tài khoản{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>Danh sách tài khoản</h3>
+        <button class="btn btn-primary" 
+                data-bs-toggle="modal" 
+                data-bs-target="#createUserModal"
+                {% if not request.user.is_staff %}disabled title="Chỉ admin mới có thể thêm tài khoản"{% endif %}>
+            Thêm tài khoản
+        </button>
+    </div>
+    <div class="card-body">
+      
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Tên đăng nhập</th>
+                    <th>Họ tên</th>
+                    <th>Email</th>
+                    <th>Vai trò</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>
+                        {% if user.full_name %}
+                            {{ user.full_name }}
+                        {% else %}
+                            {{ user.first_name }} {{ user.last_name }}
+                        {% endif %}
+                    </td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        {% if user.is_staff %}
+                            Admin
+                        {% else %}
+                            Nhân viên
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#editUserModal"
+                                data-user-id="{{ user.id }}"
+                                data-full-name="{{ user.full_name|default:'' }}"
+                                data-phone="{{ user.phone|default:'' }}"
+                                data-email="{{ user.email }}"
+                                data-is-staff="{{ user.is_staff|yesno:'true,false' }}"
+                                {% if not request.user.is_staff %}disabled title="Chỉ admin mới có thể sửa tài khoản"{% endif %}>
+                            Sửa
+                        </button>
+                        <form action="{% url 'account_management' %}" method="POST" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <button type="submit" 
+                                    class="btn btn-danger btn-sm" 
+                                    onclick="return confirm('Bạn có chắc muốn xóa tài khoản này?');"
+                                    {% if not request.user.is_staff %}disabled title="Chỉ admin mới có thể xóa tài khoản"{% endif %}>
+                                Xóa
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">Không có tài khoản nào.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create User Modal -->
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createUserModalLabel">Thêm tài khoản</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'account_management' %}" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create">
+                    {{ create_form.as_p }}
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary">Tạo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editUserModalLabel">Sửa tài khoản</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'account_management' %}" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="user_id" id="edit_user_id">
+                    {{ edit_form.as_p }}
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary">Lưu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var editModal = document.getElementById('editUserModal');
+    editModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var userId = button.getAttribute('data-user-id');
+        var fullName = button.getAttribute('data-full-name');
+        var phone = button.getAttribute('data-phone');
+        var email = button.getAttribute('data-email');
+        var isStaff = button.getAttribute('data-is-staff') === 'true';
+
+        var modal = editModal;
+        modal.querySelector('#edit_user_id').value = userId;
+        modal.querySelector('#id_full_name').value = fullName;
+        modal.querySelector('#id_phone').value = phone;
+        modal.querySelector('#id_email').value = email;
+        modal.querySelector('#id_is_staff').checked = isStaff;
+    });
+});
+</script>
+{% endblock %}

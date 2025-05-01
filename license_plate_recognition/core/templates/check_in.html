@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nhận xe vào{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>Nhận xe vào bãi</h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="camera">Camera nhận diện biển số</label>
+                    <video id="cameraPreview" autoplay style="width: 100%; height: 200px; border: 2px dashed #ccc;"></video>
+                    <canvas id="cameraCanvas" style="display: none;"></canvas>
+                    <button class="btn btn-primary mt-2" id="toggleRecognition">Bắt đầu nhận diện</button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <form id="checkInForm" method="POST" action="{% url 'vehicle_check_in' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="licensePlate">Biển số xe</label>
+                        <input type="text" class="form-control" id="licensePlate" name="license_plate" placeholder="Tự động nhận diện" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="vehicleType">Loại xe</label>
+                        <select class="form-control" id="vehicleType" name="vehicle_type" required>
+                            <option value="" disabled selected>Chọn loại xe</option>
+                            {% for vehicle_type in vehicle_types %}
+                                <option value="{{ vehicle_type.id }}">{{ vehicle_type.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="area">Khu vực đỗ</label>
+                        <select class="form-control" id="area" name="parking_area" required>
+                            <option value="" disabled selected>Chọn khu vực</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-success">Xác nhận nhận xe</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Xe vừa được nhận</h3>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Thời gian</th>
+                    <th>Biển số</th>
+                    <th>Loại xe</th>
+                    <th>Khu vực</th>
+                    <th>Nhân viên</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in recent_records %}
+                <tr>
+                    <td>{{ record.check_in_time|date:"H:i d/m/Y" }}</td>
+                    <td>{{ record.vehicle.license_plate }}</td>
+                    <td>{{ record.vehicle.vehicle_type.name }}</td>
+                    <td>{{ record.parking_area.name }}</td>
+                    <td>{{ record.staff.user.full_name }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">Chưa có xe nào được nhận.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const video = document.getElementById('cameraPreview');
+    const canvas = document.getElementById('cameraCanvas');
+    const toggleBtn = document.getElementById('toggleRecognition');
+    const licensePlateInput = document.getElementById('licensePlate');
+    const vehicleTypeSelect = document.getElementById('vehicleType');
+    const parkingAreaSelect = document.getElementById('area');
+    let isRecognizing = false;
+    let recognitionInterval;
+
+    // Start webcam
+    navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
+        .then(stream => {
+            video.srcObject = stream;
+        })
+        .catch(err => {
+            console.error('Error accessing webcam:', err);
+            alert('Không thể truy cập webcam!');
+        });
+
+    // Toggle recognition
+    toggleBtn.addEventListener('click', () => {
+        if (isRecognizing) {
+            clearInterval(recognitionInterval);
+            toggleBtn.textContent = 'Bắt đầu nhận diện';
+            toggleBtn.classList.replace('btn-danger', 'btn-primary');
+            isRecognizing = false;
+        } else {
+            recognitionInterval = setInterval(captureFrame, 2000);
+            toggleBtn.textContent = 'Dừng nhận diện';
+            toggleBtn.classList.replace('btn-primary', 'btn-danger');
+            isRecognizing = true;
+        }
+    });
+
+    // Capture and process frame
+    function captureFrame() {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        canvas.toBlob(blob => {
+            const formData = new FormData();
+            formData.append('frame', blob, 'webcam_frame.jpg');
+
+            fetch('{% url 'recognize_license_plate' %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.license_plate) {
+                    licensePlateInput.value = data.license_plate;
+                    if (isRecognizing) {
+                        clearInterval(recognitionInterval);
+                        toggleBtn.textContent = 'Bắt đầu nhận diện';
+                        toggleBtn.classList.replace('btn-danger', 'btn-primary');
+                        isRecognizing = false;
+                    }
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+            });
+        }, 'image/jpeg', 0.8);
+    }
+
+    // Update parking areas when vehicle type changes
+    vehicleTypeSelect.addEventListener('change', () => {
+        const vehicleTypeId = vehicleTypeSelect.value;
+        console.log('Vehicle Type ID:', vehicleTypeId);
+        if (vehicleTypeId) {
+            fetch(`{% url 'get_available_parking_areas' %}?vehicle_type_id=${vehicleTypeId}`, {
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Response:', data);
+                    parkingAreaSelect.innerHTML = '<option value="" disabled>Chọn khu vực</option>';
+                    if (data.error) {
+                        alert(data.error);
+                        parkingAreaSelect.disabled = true;
+                    } else if (data.parking_areas && data.parking_areas.length > 0) {
+                        parkingAreaSelect.disabled = false;
+                        data.parking_areas.forEach(area => {
+                            const option = document.createElement('option');
+                            option.value = area.id;
+                            option.textContent = area.name;
+                            parkingAreaSelect.appendChild(option);
+                        });
+                        // Chọn ngẫu nhiên một khu vực
+                        const randomIndex = Math.floor(Math.random() * data.parking_areas.length);
+                        const selectedArea = data.parking_areas[randomIndex];
+                        parkingAreaSelect.value = selectedArea.id;
+                        console.log('Auto-selected parking area:', selectedArea.id, selectedArea.name);
+                    } else {
+                        alert('Không có khu vực đỗ xe nào phù hợp!');
+                        parkingAreaSelect.disabled = true;
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('Lỗi khi lấy danh sách khu vực đỗ xe!');
+                    parkingAreaSelect.disabled = true;
+                });
+        } else {
+            parkingAreaSelect.innerHTML = '<option value="" disabled selected>Chọn khu vực</option>';
+            parkingAreaSelect.disabled = true;
+        }
+    });
+});
+</script>
+{% endblock %}
