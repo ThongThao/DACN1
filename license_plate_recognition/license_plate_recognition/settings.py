@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'core'
+    'core',
+
 ]
 
 MIDDLEWARE = [
@@ -98,7 +99,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+USE_TZ = True
+TIME_ZONE = 'Asia/Ho_Chi_Minh'
+
 
 USE_I18N = True
 
@@ -135,7 +138,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # EMAIL_HOST_PASSWORD = 'your-password'
 # Media files (ảnh biển số lưu lại)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 
 # Templates
 TEMPLATES[0]['DIRS'] = [BASE_DIR / 'core/templates']
@@ -160,3 +164,26 @@ SESSION_COOKIE_AGE = 1209600 if DEBUG else 3600  # 2 tuần (debug) hoặc 1 gi�
 SESSION_SAVE_EVERY_REQUEST = True
 DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+# import cloudinary
+# from pathlib import Path
+# DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+# # Cloudinary configuration
+# CLOUDINARY_STORAGE ={
+#     'CLOUD_NAME':'dlbx77zwt',  # Replace with your Cloudinary cloud name
+#     'API_KEY':'768853479554589',        # Replace with your Cloudinary API key
+#     'API_SECRET':'rgZA3TTEp-7n5U7sPKvke8M1sHU',  # Replace with your Cloudinary API secret
+# }
+# settings.py
+
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+cloudinary.config(
+    cloud_name='dlbx77zwt',
+    api_key='768853479554589',
+    api_secret='rgZA3TTEp-7n5U7sPKvke8M1sHU',
+)
+

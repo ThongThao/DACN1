@@ -33,6 +33,5 @@ urlpatterns = [
     path('check-in/', views.vehicle_check_in, name='vehicle_check_in'),
     path('recognize-plate/', views.recognize_license_plate, name='recognize_license_plate'),
     path('available-parking-areas/', views.get_available_parking_areas, name='get_available_parking_areas'),
-    path('check-out/', views.check_out, name='check_out'),
-    
+    path('checkout/', views.checkout_view, name='checkout'),    
 ]

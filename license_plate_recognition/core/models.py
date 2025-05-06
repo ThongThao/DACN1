@@ -85,7 +85,7 @@ class ParkingArea(models.Model):
 class Vehicle(models.Model):
     license_plate = models.CharField(max_length=20, unique=True)
     vehicle_type = models.ForeignKey(VehicleType, on_delete=models.PROTECT)
-    image = models.ImageField(upload_to='license_plates/', blank=True, null=True)
+    image= models.URLField(max_length=200, blank=True, null=True)  # Store Cloudinary URL
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
@@ -119,6 +119,7 @@ class ParkingRecord(models.Model):
     ]
     
     vehicle = models.ForeignKey(Vehicle, on_delete=models.PROTECT)
+    ticket_code = models.CharField(max_length=4, unique=False, blank=True)  # New field for ticket code
     parking_area = models.ForeignKey(ParkingArea, on_delete=models.PROTECT)
     staff = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True)
     check_in_time = models.DateTimeField()

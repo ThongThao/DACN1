@@ -13,9 +13,12 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label for="camera">Camera nhận diện biển số</label>
-                    <video id="cameraPreview" autoplay style="width: 100%; height: 200px; border: 2px dashed #ccc;"></video>
+                    <video id="cameraPreview" autoplay style="width: 100%; height: 400px; border: 2px dashed #ccc;"></video>
                     <canvas id="cameraCanvas" style="display: none;"></canvas>
-                    <button class="btn btn-primary mt-2" id="toggleRecognition">Bắt đầu nhận diện</button>
+                </div>
+                <div class="form-group">
+                    <label>Ảnh biển số</label>
+                    <img id="plateImage" src="" alt="Biển số xe" style="max-width: 100%; display: none;">
                 </div>
             </div>
             <div class="col-md-6">
@@ -24,6 +27,7 @@
                     <div class="form-group">
                         <label for="licensePlate">Biển số xe</label>
                         <input type="text" class="form-control" id="licensePlate" name="license_plate" placeholder="Tự động nhận diện" required>
+                        <input type="hidden" id="cropImagePath" name="crop_image_path">
                     </div>
                     <div class="form-group">
                         <label for="vehicleType">Loại xe</label>
@@ -31,7 +35,7 @@
                             <option value="" disabled selected>Chọn loại xe</option>
                             {% for vehicle_type in vehicle_types %}
                                 <option value="{{ vehicle_type.id }}">{{ vehicle_type.name }}</option>
-                            {% endfor %}
+                            {% endfor %} 
                         </select>
                     </div>
                     <div class="form-group">
@@ -49,27 +53,36 @@
 
 <div class="card">
     <div class="card-header">
-        <h3>Xe vừa được nhận</h3>
+        <h3>Xe đang trong bãi</h3>
     </div>
     <div class="card-body">
         <table class="table">
             <thead>
                 <tr>
-                    <th>Thời gian</th>
+                    <th>Thời gian vào</th>
+                    <th>Mã vé</th>
                     <th>Biển số</th>
                     <th>Loại xe</th>
                     <th>Khu vực</th>
-                    <th>Nhân viên</th>
+                    <th>Ảnh biển số</th>
                 </tr>
             </thead>
             <tbody>
                 {% for record in recent_records %}
                 <tr>
                     <td>{{ record.check_in_time|date:"H:i d/m/Y" }}</td>
+                    <td>{{ record.ticket_code }}</td>
                     <td>{{ record.vehicle.license_plate }}</td>
                     <td>{{ record.vehicle.vehicle_type.name }}</td>
                     <td>{{ record.parking_area.name }}</td>
-                    <td>{{ record.staff.user.full_name }}</td>
+                    <td>
+                        {% if record.vehicle.image %}
+                            <img src="{{ record.vehicle.image }}" alt="Biển số {{ record.vehicle.license_plate }}" 
+                             style="max-width: 100px; max-height: 50px; object-fit: contain;">
+                        {% else %}
+                            <span>Không có ảnh</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
@@ -85,37 +98,23 @@
 document.addEventListener('DOMContentLoaded', () => {
     const video = document.getElementById('cameraPreview');
     const canvas = document.getElementById('cameraCanvas');
-    const toggleBtn = document.getElementById('toggleRecognition');
     const licensePlateInput = document.getElementById('licensePlate');
+    const cropImagePathInput = document.getElementById('cropImagePath');
+    const plateImage = document.getElementById('plateImage');
     const vehicleTypeSelect = document.getElementById('vehicleType');
     const parkingAreaSelect = document.getElementById('area');
-    let isRecognizing = false;
-    let recognitionInterval;
 
     // Start webcam
     navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
         .then(stream => {
             video.srcObject = stream;
+            // Start continuous recognition
+            recognitionInterval = setInterval(captureFrame, 3000);
         })
         .catch(err => {
             console.error('Error accessing webcam:', err);
             alert('Không thể truy cập webcam!');
         });
-
-    // Toggle recognition
-    toggleBtn.addEventListener('click', () => {
-        if (isRecognizing) {
-            clearInterval(recognitionInterval);
-            toggleBtn.textContent = 'Bắt đầu nhận diện';
-            toggleBtn.classList.replace('btn-danger', 'btn-primary');
-            isRecognizing = false;
-        } else {
-            recognitionInterval = setInterval(captureFrame, 2000);
-            toggleBtn.textContent = 'Dừng nhận diện';
-            toggleBtn.classList.replace('btn-primary', 'btn-danger');
-            isRecognizing = true;
-        }
-    });
 
     // Capture and process frame
     function captureFrame() {
@@ -137,16 +136,20 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 if (data.license_plate) {
                     licensePlateInput.value = data.license_plate;
-                    if (isRecognizing) {
-                        clearInterval(recognitionInterval);
-                        toggleBtn.textContent = 'Bắt đầu nhận diện';
-                        toggleBtn.classList.replace('btn-danger', 'btn-primary');
-                        isRecognizing = false;
+                    cropImagePathInput.value = data.crop_image_path || '';
+                    if (data.crop_image_path) {
+                        plateImage.src = data.crop_image_path;
+                        plateImage.style.display = 'block';
+                    } else {
+                        plateImage.style.display = 'none';
                     }
+                } else {
+                    plateImage.style.display = 'none';
                 }
             })
             .catch(err => {
                 console.error('Error:', err);
+                plateImage.style.display = 'none';
             });
         }, 'image/jpeg', 0.8);
     }
@@ -197,5 +200,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+// Bắt sự kiện click vào ảnh để mở modal
+document.addEventListener('click', function(e) {
+    if (e.target.tagName === 'IMG' && e.target.closest('td')) {
+        const imgSrc = e.target.getAttribute('src');
+        if (imgSrc) {
+            const modalImage = document.getElementById('modalImage');
+            modalImage.setAttribute('src', imgSrc);
+            const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+            imageModal.show();
+        }
+    }
+});
+
+
+
+
 </script>
+<!-- Modal hiển thị ảnh -->
+
+<!-- Modal hiển thị ảnh có nút đóng và zoom -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Ảnh biển số</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+        </div>
+        <div class="modal-body text-center" style="overflow: hidden;">
+          <div id="zoomContainer" style="display: inline-block; overflow: hidden; max-width: 100%; max-height: 80vh;">
+            <img id="modalImage" src="" alt="Ảnh biển số" style="transition: transform 0.2s ease; max-width: 100%; height: auto; cursor: grab;">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  
 {% endblock %}
