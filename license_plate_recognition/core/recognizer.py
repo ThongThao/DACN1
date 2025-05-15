@@ -20,13 +20,13 @@ yolo_license_plate = None
 
 def load_models():
     global yolo_LP_detect, yolo_license_plate
-    model_path = os.path.join(settings.BASE_DIR, 'core', 'model', 'LP_detector.pt')
+    model_path = os.path.join(settings.BASE_DIR, 'core', 'model', 'LP_detector_nano_61.pt')
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model not found: {model_path}")
     yolo_LP_detect = torch.hub.load(
         'core/yolov5', 'custom', path=model_path, force_reload=True, source='local'
     )
-    ocr_model_path = os.path.join(settings.BASE_DIR, 'core', 'model', 'LP_ocr.pt')
+    ocr_model_path = os.path.join(settings.BASE_DIR, 'core', 'model', 'LP_ocr_nano_62.pt')
     if not os.path.exists(ocr_model_path):
         raise FileNotFoundError(f"Model not found: {ocr_model_path}")
     yolo_license_plate = torch.hub.load(
