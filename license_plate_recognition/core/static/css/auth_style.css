@@ -7,28 +7,43 @@
 }
 
 body {
-    background-color: #f5f5f5;
-    color: #333;
+    margin: 0;
     min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
 }
 
+.background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("background.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(1px); /* Điều chỉnh mức độ mờ (5px là giá trị trung bình) */
+    z-index: -1; /* Đặt nền phía sau auth-card */
+}
+
+.auth-card {
+    background-color: rgba(255, 255, 255, 0.95); /* Tăng độ trong suốt nhẹ để nổi bật trên nền mờ */
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
+    width: 100%;
+    z-index: 1; /* Đảm bảo auth-card nằm trên nền */
+}
 .auth-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    padding: 20px;
-    background-color: #f8f9fa;
-}
+    width: 400px;
 
-.auth-card {
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    padding: 30px;
-    width: 100%;
-    max-width: 450px;
-    animation: fadeIn 0.5s ease-in-out;
 }
 
 @keyframes fadeIn {

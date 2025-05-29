@@ -24,7 +24,7 @@ urlpatterns = [
     path('password-reset-complete/', auth_views.PasswordResetCompleteView.as_view(
         template_name='password_reset_complete.html'), name='password_reset_complete'),
 
-    path('home/', views.home, name='home'),
+    path('home/', views.home_view, name='home'),
     path('accounts/', views.account_management, name='account_management'),
 
     path('staff/', views.staff_management, name='staff_management'),
@@ -34,4 +34,5 @@ urlpatterns = [
     path('recognize-plate/', views.recognize_license_plate, name='recognize_license_plate'),
     path('available-parking-areas/', views.get_available_parking_areas, name='get_available_parking_areas'),
     path('checkout/', views.checkout_view, name='checkout'),    
+    path('parking-history/', views.parking_history_view, name='parking_history'),
 ]

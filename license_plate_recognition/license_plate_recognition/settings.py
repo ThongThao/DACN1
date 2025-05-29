@@ -148,8 +148,11 @@ LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
 AUTH_USER_MODEL = 'core.User'
 # Cấu hình thời gian
-TIME_ZONE = 'Asia/Ho_Chi_Minh'
-USE_TZ = True
+# settings.py
+TIME_ZONE = 'Asia/Ho_Chi_Minh'  # Múi giờ Việt Nam
+USE_I18N = True
+USE_L10N = True
+USE_TZ = True  # Sử dụng múi giờ tự động
 # settings.py
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',

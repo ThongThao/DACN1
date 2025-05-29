@@ -13,7 +13,7 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label for="camera">Camera nhận diện biển số</label>
-                    <video id="cameraPreview" autoplay style="border: 2px dashed #ccc; width: 100%; height: 200px;"></video>
+                     <video id="cameraPreview" autoplay style="width: 100%;  border: 2px dashed #ccc;"></video>
                     <button id="captureBtn" class="btn btn-primary mt-2">Chụp ảnh</button>
                     <canvas id="captureCanvas" style="display: none;"></canvas>
                 </div>
@@ -61,6 +61,47 @@
                 <button id="printInvoiceBtn" class="btn btn-primary" style="display: none;">In hóa đơn</button>
             </div>
         </div>
+    </div>
+</div>
+<!-- Hộp hướng dẫn -->
+<div class="card mt-4">
+    <div class="card-body">
+        <div class="alert alert-info" role="alert">
+            <p class="mb-0"><strong>Cách tính tiền đỗ xe:</strong></p>
+            <ul class="list-unstyled">
+                <li><span class="text-success">✔</span> 5 giờ đầu tiên: Giá cố định theo loại xe.</li>
+                <li><span class="text-success">✔</span> Giờ bổ sung: Mỗi giờ thêm tính gấp đôi giá 30 phút.</li>
+                <li><span class="text-success">✔</span> Phí qua đêm: Thêm phí nếu đỗ qua ngày mới.</li>
+                <li><span class="text-success">✔</span> Tổng tiền = 5 giờ đầu + Giờ bổ sung + Phí qua đêm (nếu có).</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Bảng giá từng loại xe -->
+<div class="card mt-4">
+    <div class="card-body">
+        <h4>Bảng giá đỗ xe theo loại xe</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Loại xe</th>
+                    <th>Giá 5 giờ đầu (VND)</th>
+                    <th>Giá 30 phút bổ sung (VND)</th>
+                    <th>Phí qua đêm (VND)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vt in vehicle_types %}
+                <tr>
+                    <td>{{ vt.name }}</td>
+                    <td>{{ vt.first_hour_price|floatformat:0 }}</td>
+                    <td>{{ vt.additional_price|floatformat:0 }}</td>
+                    <td>{{ vt.overnight_price|floatformat:0 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}
@@ -116,6 +157,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 licensePlateInput.value = data.license_plate;
                 document.getElementById('checkInTime').textContent = data.check_in_time;
                 document.getElementById('checkOutTime').textContent = data.check_out_time;
+                let duration = data.duration.split('.')[0];  // Chỉ lấy phần "7:37:17"
+
                 document.getElementById('duration').textContent = data.duration;
                 document.getElementById('vehicleType').textContent = data.vehicle_type;
                 document.getElementById('totalAmount').textContent = data.total_amount;
@@ -137,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('license_plate', licensePlateInput.value);
         formData.append('payment_method', paymentMethodSelect.value);
 
-        fetch('/checkout/', {
+        fetch('#', {
             method: 'POST',
             body: formData,
             headers: {

@@ -132,9 +132,10 @@ class ParkingRecord(models.Model):
     payment_success = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     
-    def __str__():
-        return f"{self.vehicle.license_plate} - {self.check_in_time}"
-    
+    def __str__(self):
+     ticket = getattr(self, 'ticket_code', 'N/A')
+     license_plate = getattr(self.vehicle, 'license_plate', 'N/A') if self.vehicle else 'N/A'
+     return f"{ticket} - {license_plate}"
     class Meta:
         verbose_name = 'Bản ghi đỗ xe'
         verbose_name_plural = 'Bản ghi đỗ xe'

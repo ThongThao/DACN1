@@ -535,14 +535,15 @@ def checkout_view(request):
                 # Tính toán chi phí
                 check_out_time = timezone.now()
                 duration = check_out_time - parking_record.check_in_time
-                hours = duration.total_seconds() / 3600  # Chuyển sang giờ
+
+                hours = duration.total_seconds() / 3600
                 
                 vehicle_type = parking_record.vehicle.vehicle_type
-                if hours <= 1:
+                if hours <= 5:
                     total_amount = vehicle_type.first_hour_price
                 else:
-                    additional_hours = (hours - 1) * 2  # Mỗi giờ thêm tính 2 lần 30 phút
-                    total_amount = vehicle_type.first_hour_price + Decimal(additional_hours) * vehicle_type.additional_price
+                    extra_hours = hours - 5
+                    total_amount = vehicle_type.first_hour_price + Decimal(extra_hours) * vehicle_type.additional_price * 2
 
                 # Kiểm tra qua đêm
                 if parking_record.check_in_time.date() != check_out_time.date():
@@ -582,11 +583,11 @@ def checkout_view(request):
             hours = duration.total_seconds() / 3600
             vehicle_type = parking_record.vehicle.vehicle_type
             
-            if hours <= 1:
+            if hours <= 5:
                 total_amount = vehicle_type.first_hour_price
             else:
-                additional_hours = (hours - 1) * 2
-                total_amount = vehicle_type.first_hour_price + Decimal(additional_hours) * vehicle_type.additional_price
+                extra_hours = hours - 5
+                total_amount = vehicle_type.first_hour_price + Decimal(extra_hours) * vehicle_type.additional_price * 2
             
             if parking_record.check_in_time.date() != check_out_time.date():
                 total_amount += vehicle_type.overnight_price
@@ -605,21 +606,157 @@ def checkout_view(request):
             parking_area.current_occupancy = max(0, parking_area.current_occupancy - 1)
             parking_area.save()
 
-            return JsonResponse({'success': 'Thanh toán thành công', 'redirect': '/parking_records/'})
+            return JsonResponse({'success': 'Thanh toán thành công'})
 
-    return render(request, 'check_out.html')
+    # Lấy danh sách loại xe và giá
+    vehicle_types = VehicleType.objects.all()
+    return render(request, 'check_out.html', {'vehicle_types': vehicle_types})
 
 def calculate_parking_fee(check_in_time, check_out_time, vehicle_type):
     """
-    Tính phí đỗ xe dựa trên thời gian và loại xe.
+    Tính phí đỗ xe mới: 5 giờ đầu theo giá cố định, sau đó mỗi giờ thêm tính gấp đôi giá 30 phút.
     """
     duration = check_out_time - check_in_time
     hours = duration.total_seconds() / 3600
     
-    if hours <= 1:
-        return vehicle_type.first_hour_price
+    if hours <= 5:
+        total_amount = vehicle_type.first_hour_price
     else:
-        additional_hours = (hours - 1) * 2
-        return vehicle_type.first_hour_price + Decimal(additional_hours) * vehicle_type.additional_price + (
-            vehicle_type.overnight_price if check_in_time.date() != check_out_time.date() else 0
-        )
+        extra_hours = hours - 5
+        total_amount = vehicle_type.first_hour_price + Decimal(extra_hours) * vehicle_type.additional_price * 2
+
+    if check_in_time.date() != check_out_time.date():
+        total_amount += vehicle_type.overnight_price
+
+    return total_amount
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum, Count, Q
+from django.utils import timezone
+from .models import ParkingRecord, Vehicle, VehicleType, Staff, ParkingArea
+import datetime
+
+@login_required
+def home_view(request):
+    today = timezone.now().date()
+    
+    # --- Tổng quan hệ thống ---
+    # Số xe trong bãi (payment_status=PENDING)
+    vehicles_in_parking = ParkingRecord.objects.filter(
+        payment_status='PENDING'
+    ).count()
+    
+    # Doanh thu tháng này
+    revenue_month = ParkingRecord.objects.filter(
+        payment_time__month=today.month,
+        payment_time__year=today.year,
+        payment_status='PAID'
+    ).aggregate(total=Sum('total_amount'))['total'] or 0
+    
+    # Số chỗ trống hiện tại
+    total_capacity = ParkingArea.objects.aggregate(total=Sum('max_capacity'))['total'] or 0
+    total_occupied = ParkingArea.objects.aggregate(total=Sum('current_occupancy'))['total'] or 0
+    total_free_slots = max(0, total_capacity - total_occupied)
+    
+    # Tỷ lệ sử dụng bãi đỗ (%)
+    usage_percentage = (total_occupied / total_capacity * 100) if total_capacity > 0 else 0
+    
+    # Hoạt động gần đây (3 bản ghi gần nhất)
+    recent_activities = ParkingRecord.objects.select_related('vehicle__vehicle_type').order_by('-check_in_time')[:3]
+    
+    # --- Biểu đồ cột: Số xe vào/ra theo ngày (7 ngày gần đây) ---
+    vehicles_in_out_by_day = []
+    for i in range(6, -1, -1):
+        date = today - datetime.timedelta(days=i)
+        vehicles_in = ParkingRecord.objects.filter(
+            check_in_time__date=date
+        ).count()
+        vehicles_out = ParkingRecord.objects.filter(
+            check_out_time__date=date,
+            payment_status__in=['PAID', 'PENDING']
+
+        ).count()
+        vehicles_in_out_by_day.append({
+            'date': date.strftime('%a'),
+            'vehicles_in': vehicles_in,
+            'vehicles_out': vehicles_out
+        })
+    
+    # --- Biểu đồ tròn: Phân bố loại xe đã ra vào bãi ---
+    vehicle_type_distribution = ParkingRecord.objects.filter(
+       payment_status__in=['PAID', 'PENDING']
+
+    ).values('vehicle__vehicle_type__name').annotate(count=Count('id'))
+    
+    # --- Biểu đồ doughnut: Tỷ lệ xe đang đỗ/còn trống theo khu vực ---
+    parking_area_usage = []
+    for area in ParkingArea.objects.all():
+        occupied = area.current_occupancy
+        free = max(0, area.max_capacity - occupied)
+        parking_area_usage.append({
+            'area': area.name,
+            'occupied': occupied,
+            'free': free,
+            'usage_percentage': (occupied / area.max_capacity * 100) if area.max_capacity > 0 else 0
+        })
+    
+    context = {
+        'vehicles_in_parking': vehicles_in_parking,
+        'revenue_month': f"{revenue_month:,.0f} VND" if revenue_month else "0 VND",
+        'total_free_slots': total_free_slots,
+        'usage_percentage': round(usage_percentage, 2),
+        'recent_activities': recent_activities,
+        'vehicles_in_out_by_day': vehicles_in_out_by_day,
+        'vehicle_type_distribution': list(vehicle_type_distribution),
+        'parking_area_usage': parking_area_usage,
+    }
+    return render(request, 'home.html', context)
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.db.models import Q
+from .models import ParkingRecord
+
+@login_required
+def parking_history_view(request):
+    query = request.GET.get('q', '')  # Lấy giá trị tìm kiếm từ thanh tìm kiếm
+    page_number = request.GET.get('page', 1)  # Lấy số trang từ URL, mặc định là 1
+    
+    # Lấy danh sách bản ghi
+    if query:
+        parking_records = ParkingRecord.objects.filter(
+            Q(vehicle__license_plate__icontains=query) | Q(ticket_code__icontains=query)
+        ).select_related('vehicle__vehicle_type', 'parking_area').order_by('-check_in_time')
+    else:
+        parking_records = ParkingRecord.objects.select_related('vehicle__vehicle_type', 'parking_area').order_by('-check_in_time')
+    
+    # Phân trang
+    paginator = Paginator(parking_records, 12)  # 12 bản ghi mỗi trang
+    page_obj = paginator.get_page(page_number)
+    
+    # Chuyển danh sách bản ghi thành JSON cho cả AJAX và dữ liệu ban đầu
+    records_data = [{
+        'ticket_code': record.ticket_code,
+        'license_plate': record.vehicle.license_plate,
+        'vehicle_type': record.vehicle.vehicle_type.name,
+        'parking_area': record.parking_area.name,
+        'payment_status': 'Đã trả' if record.payment_status == 'paid' else 'Đang đỗ',
+         'check_in_time': timezone.localtime(record.check_in_time).strftime('%H:%M %d/%m/%Y'),
+        'check_out_time': timezone.localtime(record.check_out_time).strftime('%H:%M %d/%m/%Y') if record.check_out_time else '',
+
+                'license_plate_image': record.vehicle.image if record.vehicle.image else None  # Sử dụng image URL
+
+    } for record in page_obj.object_list]
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':  # Yêu cầu AJAX
+        return JsonResponse({'records': records_data})
+    
+    # Hiển thị trang ban đầu
+    context = {
+        'parking_records': page_obj.object_list,  # Danh sách bản ghi của trang hiện tại
+        'records_data': records_data,
+        'query': query,
+        'page_obj': page_obj,  # Đối tượng phân trang
+    }
+    return render(request, 'parking_history.html', context)

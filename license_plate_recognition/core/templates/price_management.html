@@ -11,7 +11,7 @@
                 data-bs-toggle="modal" 
                 data-bs-target="#createPriceModal"
                 {% if not request.user.is_superuser %}disabled title="Chỉ admin mới có thể thêm giá"{% endif %}>
-            Thêm loại xe
+            <i class="fas fa-plus"></i>   
         </button>
     </div>
     <div class="card-body">
@@ -42,7 +42,8 @@
                                     data-additional-price="{{ vehicle_type.additional_price }}"
                                     data-overnight-price="{{ vehicle_type.overnight_price }}"
                                     {% if not request.user.is_superuser %}disabled title="Chỉ admin mới có thể sửa giá"{% endif %}>
-                                Sửa
+                                <i class="fas fa-edit"></i>
+
                             </button>
                             <form action="{% url 'price_management' %}" method="POST" style="display:inline;">
                                 {% csrf_token %}
@@ -52,7 +53,8 @@
                                         class="btn btn-danger btn-sm" 
                                         onclick="return confirm('Bạn có chắc muốn xóa loại xe này?');"
                                         {% if not request.user.is_superuser %}disabled title="Chỉ admin mới có thể xóa giá"{% endif %}>
-                                    Xóa
+                                        <i class="fas fa-trash-alt"></i>
+
                                 </button>
                             </form>
                         </td>
@@ -115,8 +117,10 @@
                         {% endif %}
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                        <button type="submit" class="btn btn-primary">Tạo</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i>
+</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>
+</button>
                     </div>
                 </form>
             </div>
@@ -173,8 +177,10 @@
                         {% endif %}
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                        <button type="submit" class="btn btn-primary">Lưu</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i>
+</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>
+</button>
                     </div>
                 </form>
             </div>

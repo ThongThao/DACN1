@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Lịch sử ra vào{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h3>Lịch sử ra vào của bãi xe</h3>
+    </div>
+    <div class="card-body">
+        <!-- Thanh tìm kiếm realtime -->
+        <div class="input-group mb-4" style="max-width: 500px;">
+            <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm theo mã vé hoặc biển số..." value="{{ query }}">
+        </div>
+
+        <!-- Bảng danh sách bản ghi -->
+        <table class="table" id="parkingTable">
+            <thead>
+                <tr>
+                    <th>Mã vé</th>
+                    <th>Biển số</th>
+                    <th>Loại xe</th>
+                    <th>Khu vực</th>
+                    <th>Trạng thái</th>
+                    <th>Thời gian vào</th>
+                    <th>Thời gian ra</th>
+                
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                {% for record in parking_records %}
+                <tr>
+                    <td>{{ record.ticket_code }}</td>
+                    <td>{{ record.vehicle.license_plate }}</td>
+                    <td>{{ record.vehicle.vehicle_type.name }}</td>
+                    <td>{{ record.parking_area.name }}</td>
+                    <td>{% if record.payment_status == 'pending' %} Đang đỗ {% else %} Đã trả {% endif %}</td>
+                    <td>{{ record.check_in_time|date:"H:i d/m/Y" }}</td>
+                    <td>{{ record.check_out_time|date:"H:i d/m/Y" }}</td>
+
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center">Không có bản ghi nào</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}"><i class="fas fa-arrow-left"> </i></a>
+                </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link">{{ page_obj.number }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}"><i class="fas fa-arrow-right"></i></a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Modal để hiển thị ảnh biển số -->
+<div class="modal fade" id="licensePlateModal" tabindex="-1" aria-labelledby="licensePlateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="licensePlateModalLabel">Ảnh biển số</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <img id="licensePlateImage" src="" alt="Biển số xe" style="max-width: 100%; height: auto;">
+                <p id="licensePlateText" class="mt-2"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Truyền dữ liệu JSON từ view vào JavaScript -->
+{{ records_data|json_script:"records-data" }}
+{% endblock %}
+
+{% block scripts %}
+{% if user.is_authenticated %}
+<!-- Thêm Bootstrap JS và Popper.js cho modal -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Hàm cập nhật bảng
+    function updateTable(records) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        if (records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center">Không có bản ghi nào</td></tr>';
+        } else {
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${record.ticket_code}</td>
+                    <td>${record.license_plate}</td>
+                    <td>${record.vehicle_type}</td>
+                    <td>${record.parking_area}</td>
+                                  <td>${record.payment_status}</td>
+                    <td>${record.check_in_time}</td>
+                    <td>${record.check_out_time}</td>
+      
+                `;
+                // Thêm sự kiện click để hiển thị modal với ảnh biển số
+                row.addEventListener('click', () => {
+                    const modalImage = document.getElementById('licensePlateImage');
+                    const modalText = document.getElementById('licensePlateText');
+                    if (record.license_plate_image) {  // Sửa lại thành license_plate_image để khớp với view
+                        modalImage.src = record.license_plate_image;  // URL từ image
+                        modalImage.style.display = 'block';
+                    } else {
+                        modalImage.style.display = 'none';
+                    }
+                    modalText.textContent = `Biển số: ${record.license_plate}`;
+                    const modal = new bootstrap.Modal(document.getElementById('licensePlateModal'));
+                    modal.show();
+                });
+                tbody.appendChild(row);
+            });
+        }
+    }
+
+    // Lấy dữ liệu ban đầu từ JSON trong script tag
+    const initialRecords = JSON.parse(document.getElementById('records-data').textContent);
+    updateTable(initialRecords);
+
+    // Tìm kiếm realtime
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', function() {
+        const query = this.value;
+        $.get('/parking-history/', { q: query }, function(data) {
+            updateTable(data.records);
+        });
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

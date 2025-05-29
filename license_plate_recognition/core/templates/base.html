@@ -27,6 +27,8 @@
                 <li><a href="{% url 'home' %}"><i class="fas fa-home"></i><span>Trang chủ</span></a></li>
                 <li><a href="{% url 'vehicle_check_in' %}"><i class="fas fa-sign-in-alt"></i><span>Nhận xe vào</span></a></li>
                 <li><a href="{% url 'checkout' %}"><i class="fas fa-sign-out-alt"></i><span>Thanh toán xe ra</span></a></li>
+                                <li><a href="{% url 'parking_history' %}"><i class="fas fa-history">
+</i><span>Lịch sử</span></a></li>
                 <li><a href="{% url 'account_management' %}"><i class="fas fa-user"></i><span>Quản lý tài khoản</span></a></li>
                 <li><a href="{% url 'staff_management' %}"><i class="fas fa-users"></i><span>Quản lý nhân viên</span></a></li>
                 <li><a href="{% url 'price_management' %}"><i class="fas fa-tag"></i><span>Quản lý giá xe</span></a></li>
@@ -43,8 +45,16 @@
             <nav class="top-nav">
                 <div class="user-info">
                     {% if user.is_authenticated %}
-                        <span>Xin chào, {{ user.username }}</span>
-                        <a href="{% url 'logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+                        <div class="dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="accountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user"></i> {{ user.full_name }} <span class="visually-hidden">(current)</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
+                                <li><a class="dropdown-item" href="#">Quản lí hồ sơ</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">Đăng xuất</a></li>
+                            </ul>
+                        </div>
                     {% else %}
                         <a href="{% url 'login' %}" class="login-btn"><i class="fas fa-sign-in-alt"></i> Đăng nhập</a>
                     {% endif %}

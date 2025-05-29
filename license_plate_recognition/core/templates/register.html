@@ -5,12 +5,13 @@
 {% block title %}Đăng ký tài khoản{% endblock %}
 
 {% block content %}
+<div class="background"></div>
 <div class="auth-card">
     <div class="auth-header">
         <img src="{% static 'images/logo .png' %}" alt="Logo" class="auth-logo">
         <h2>Đăng ký tài khoản</h2>
     </div>
-
+ 
     <form method="post" class="auth-form">
         {% csrf_token %}
 

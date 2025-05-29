@@ -19,20 +19,27 @@ body {
 /* Sidebar styles */
 .sidebar {
     width: 250px;
-    background-color: #2c3e50;
-    color: white;
+    background-color: #EEF7FF;
+    color: #EEF7FF;
     transition: all 0.3s;
     height: 100vh;
     position: fixed;
     overflow-y: auto;
 }
-
+.user-info{
+    color: #4D869C;
+        font-size: large;
+}
 .sidebar-header {
-    padding: 20px;
-    background-color: #1a252f;
-    display: flex;
-    justify-content: space-between;
+  padding: 20px;
+    background-color: #4D869C;
+    display: flex
+;
+    justify-content: space-around;
     align-items: center;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-header h2 {
@@ -43,7 +50,7 @@ body {
 .toggle-btn {
     background: none;
     border: none;
-    color: white;
+    color: #EEF7FF;
     font-size: 1.2rem;
     cursor: pointer;
 }
@@ -52,6 +59,10 @@ body {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: flex
+;
+    flex-direction: column;
+
 }
 
 .sidebar-menu li {
@@ -61,14 +72,14 @@ body {
 .sidebar-menu li a {
     display: flex;
     align-items: center;
-    padding: 15px 20px;
-    color: white;
+    padding: 20px 20px;
+    color: #4D869C;
     text-decoration: none;
     transition: all 0.3s;
 }
 
 .sidebar-menu li a:hover {
-    background-color: #34495e;
+    background-color: #CDE8E5;
 }
 
 .sidebar-menu li a i {
@@ -97,7 +108,8 @@ body {
 }
 
 .top-nav {
-    background-color: white;
+    background-color: #EEF7FF;
+    height: 68.8px;
     padding: 15px 20px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     display: flex;
@@ -159,8 +171,39 @@ body {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     padding: 20px;
     margin-bottom: 20px;
-}
 
+}
+.cardd {
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: 650px;
+    height: 500px;
+}
+.carddd {
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: 550px;
+    height: 500px;
+}
+.carddd .card-body{
+    width: 400px;
+    height: 400px;
+    margin: 0px 50px;
+}
+.cardd .card-body{
+    height: 400px;
+}
+.cardmix{
+display: flex
+;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+}
 .card-header {
     border-bottom: 1px solid #eee;
     padding-bottom: 10px;
@@ -168,11 +211,21 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background-color: #EEF7FF;
+}
+.cardd-header {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #EEF7FF;
 }
 
 .card-header h3 {
     margin: 0;
-    color: #2c3e50;
+    color: #4D869C;
 }
 
 /* Form styles */
@@ -204,12 +257,12 @@ body {
 }
 
 .btn-primary {
-    background-color: #3498db;
+    background-color: #129990;
     color: white;
 }
 
 .btn-primary:hover {
-    background-color: #2980b9;
+    background-color: #026e66;
 }
 
 .btn-success {
@@ -219,6 +272,10 @@ body {
 
 .btn-success:hover {
     background-color: #27ae60;
+}
+.chart-canvas {
+    width: 300px !important;
+    height: 300px !important;
 }
 
 .btn-danger {
@@ -348,4 +405,27 @@ body {
 .form-text {
     font-size: 0.875em;
     color: #6c757d;
+}
+.input-group {
+    max-width: 500px;
+}
+#searchInput {
+    border-radius: 0.25rem;
+}
+.table tbody tr:hover {
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+.modal-body img {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+.pagination {
+    margin-top: 20px;
+}
+.pagination .page-link {
+    color: #007bff;
+}
+.pagination .page-link:hover {
+    background-color: #e9ecef;
 }

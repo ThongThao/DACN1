@@ -11,7 +11,8 @@
                 data-bs-toggle="modal" 
                 data-bs-target="#createUserModal"
                 {% if not request.user.is_staff %}disabled title="Chỉ admin mới có thể thêm tài khoản"{% endif %}>
-            Thêm tài khoản
+        <i class="fas fa-user-plus"></i>
+
         </button>
     </div>
     <div class="card-body">
@@ -57,7 +58,7 @@
                                 data-email="{{ user.email }}"
                                 data-is-staff="{{ user.is_staff|yesno:'true,false' }}"
                                 {% if not request.user.is_staff %}disabled title="Chỉ admin mới có thể sửa tài khoản"{% endif %}>
-                            Sửa
+                           <i class="fas fa-edit"></i>
                         </button>
                         <form action="{% url 'account_management' %}" method="POST" style="display:inline;">
                             {% csrf_token %}
@@ -67,7 +68,7 @@
                                     class="btn btn-danger btn-sm" 
                                     onclick="return confirm('Bạn có chắc muốn xóa tài khoản này?');"
                                     {% if not request.user.is_staff %}disabled title="Chỉ admin mới có thể xóa tài khoản"{% endif %}>
-                                Xóa
+                               <i class="fas fa-trash-alt"></i>
                             </button>
                         </form>
                     </td>
@@ -96,8 +97,10 @@
                     <input type="hidden" name="action" value="create">
                     {{ create_form.as_p }}
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                        <button type="submit" class="btn btn-primary">Tạo</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i>
+</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>
+</button>
                     </div>
                 </form>
             </div>
@@ -120,8 +123,10 @@
                     <input type="hidden" name="user_id" id="edit_user_id">
                     {{ edit_form.as_p }}
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                        <button type="submit" class="btn btn-primary">Lưu</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i>
+</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>
+</button>
                     </div>
                 </form>
             </div>

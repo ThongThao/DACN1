@@ -11,7 +11,7 @@
                 data-bs-toggle="modal" 
                 data-bs-target="#createAreaModal"
                 {% if not request.user.is_superuser %}disabled title="Chỉ admin mới có thể thêm khu vực"{% endif %}>
-            Thêm khu vực
+            <i class="fas fa-map-marker-alt fa-plus"></i> 
         </button>
     </div>
     <div class="card-body">
@@ -47,7 +47,8 @@
                                     data-vehicle-type="{{ area.vehicle_type.id }}" 
                                     data-status="{{ area.status }}"
                                     {% if not request.user.is_superuser %}disabled title="Chỉ admin mới có thể sửa khu vực"{% endif %}>
-                                Sửa
+                                   <i class="fas fa-edit"></i>
+
                             </button>
                             <form action="{% url 'area_management' %}" method="POST" style="display:inline;">
                                 {% csrf_token %}
@@ -57,7 +58,8 @@
                                         class="btn btn-danger btn-sm" 
                                         onclick="return confirm('Bạn có chắc muốn xóa khu vực này?');"
                                         {% if not request.user.is_superuser %}disabled title="Chỉ admin mới có thể xóa khu vực"{% endif %}>
-                                    Xóa
+                                        <i class="fas fa-trash-alt"></i>
+
                                 </button>
                             </form>
                         </td>
@@ -130,8 +132,10 @@
                         {% endif %}
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                        <button type="submit" class="btn btn-primary" {% if not vehicle_types %}disabled title="Cần có ít nhất một loại xe"{% endif %}>Tạo</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i>
+</button>
+                        <button type="submit" class="btn btn-primary" {% if not vehicle_types %}disabled title="Cần có ít nhất một loại xe"{% endif %}><i class="fas fa-save"></i>
+</button>
                     </div>
                 </form>
             </div>
@@ -198,8 +202,10 @@
                         {% endif %}
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                        <button type="submit" class="btn btn-primary" {% if not vehicle_types %}disabled title="Cần có ít nhất một loại xe"{% endif %}>Lưu</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i>
+</button>
+                        <button type="submit" class="btn btn-primary" {% if not vehicle_types %}disabled title="Cần có ít nhất một loại xe"{% endif %}><i class="fas fa-save"></i>
+</button>
                     </div>
                 </form>
             </div>

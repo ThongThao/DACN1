@@ -15,28 +15,80 @@
 </div>
 {% else %}
 <div class="card">
-    <div class="card-header">
-        <h3>Tổng quan hệ thống</h3>
-    </div>
     <div class="card-body">
-        <div class="stats-container">
-            <div class="stat-card">
-                <h4>Xe trong bãi</h4>
-                <p class="stat-value">125</p>
-            </div>
-            <div class="stat-card">
-                <h4>Doanh thu hôm nay</h4>
-                <p class="stat-value">5,250,000 VND</p>
-            </div>
-            <div class="stat-card">
-                <h4>Nhân viên đang làm</h4>
-                <p class="stat-value">3</p>
+        <div class="row stats-container">
+            <!-- Thẻ KPI -->
+            <div class="row stats-container mb-4">
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card text-center">
+                        <h4>Doanh thu tháng này</h4>
+                        <p class="stat-value">{{ revenue_month }}</p>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card text-center">
+                        <h4>Số chỗ trống</h4>
+                        <p class="stat-value">{{ total_free_slots }}</p>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card text-center">
+                        <h4>Tỷ lệ sử dụng</h4>
+                        <p class="stat-value">{{ usage_percentage }}%</p>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card text-center">
+                        <h4>Xe trong bãi</h4>
+                        <p class="stat-value">{{ vehicles_in_parking }}</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="card">
+<!-- Biểu đồ cột: Số xe vào/ra theo ngày -->
+<div class="cardmix">
+    <div class="cardd mb-4">
+        <div class="card-header">
+            <h3>Số xe vào/ra theo ngày (7 ngày gần đây)</h3>
+        </div>
+        <div class="card-body">
+            <canvas id="vehiclesInOutChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Biểu đồ tròn: Phân bố loại xe đã ra vào bãi -->
+    <div class="carddd mb-4">
+        <div class="card-header">
+            <h3>Phân bố loại xe đã ra vào bãi</h3>
+        </div>
+        <div class="card-body">
+            <canvas id="vehicleTypePieChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Biểu đồ doughnut: Tỷ lệ xe đang đỗ/còn trống theo khu vực (chung một khung) -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h3>Tỷ lệ sử dụng các khu vực</h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for area in parking_area_usage %}
+            <div class="col-md-4 mb-3 text-center">
+                <canvas id="parkingAreaUsageChart_{{ forloop.counter }}" width="200px" height="200px"></canvas>
+                <p class="mt-2">{{ area.area }}: {{ area.usage_percentage }}% đang sử dụng</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Hoạt động gần đây -->
+<div class="card mb-4">
     <div class="card-header">
         <h3>Hoạt động gần đây</h3>
     </div>
@@ -51,27 +103,135 @@
                 </tr>
             </thead>
             <tbody>
+                {% for activity in recent_activities %}
                 <tr>
-                    <td>10:25 15/06/2023</td>
-                    <td>51A-12345</td>
-                    <td>Xe máy</td>
-                    <td>Vào bãi</td>
+                    <td>{{ activity.check_in_time|date:"H:i d/m/Y" }}</td>
+                    <td>{{ activity.vehicle.license_plate }}</td>
+                    <td>{{ activity.vehicle.vehicle_type.name }}</td>
+                    <td>{% if activity.payment_status == 'PENDING' %}Vào bãi{% else %}Ra bãi{% endif %}</td>
                 </tr>
+                {% empty %}
                 <tr>
-                    <td>10:20 15/06/2023</td>
-                    <td>30A-54321</td>
-                    <td>Ô tô</td>
-                    <td>Ra bãi</td>
+                    <td colspan="4" class="text-center">Không có hoạt động gần đây</td>
                 </tr>
-                <tr>
-                    <td>10:15 15/06/2023</td>
-                    <td>29A-98765</td>
-                    <td>Xe máy</td>
-                    <td>Vào bãi</td>
-                </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if user.is_authenticated %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Biểu đồ cột: Số xe vào/ra theo ngày
+    const vehiclesInOutData = {
+        labels: [{% for day in vehicles_in_out_by_day %}'{{ day.date }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [
+            {
+                label: 'Số xe vào',
+                data: [{% for day in vehicles_in_out_by_day %}{{ day.vehicles_in }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: 'rgba(40, 167, 69, 0.6)', // Màu xanh lá
+                borderColor: 'rgba(40, 167, 69, 1)',
+                borderWidth: 1
+            },
+            {
+                label: 'Số xe ra',
+                data: [{% for day in vehicles_in_out_by_day %}{{ day.vehicles_out }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: 'rgba(220, 53, 69, 0.6)', // Màu đỏ
+                borderColor: 'rgba(220, 53, 69, 1)',
+                borderWidth: 1
+            }
+        ]
+    };
+   new Chart(document.getElementById('vehiclesInOutChart').getContext('2d'), {
+        type: 'bar',
+        data: vehiclesInOutData,
+        options: {
+            scales: {
+                y: { 
+                    beginAtZero: true,
+                    max: 20, // Giới hạn tối đa trục Y là 20
+                    ticks: {
+                        stepSize: 5 // Đặt bước trục Y là 5 (5, 10, 15, 20)
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: true },
+                tooltip: { enabled: true }
+            }
+        }
+    });
+
+    // Biểu đồ tròn: Phân bố loại xe đã ra vào bãi
+    const vehicleTypeData = {
+        labels: [{% for item in vehicle_type_distribution %}'{{ item.vehicle__vehicle_type__name }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Phân bố loại xe',
+            data: [{% for item in vehicle_type_distribution %}{{ item.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: [
+                'rgba(255, 193, 7, 0.6)',  // Màu vàng
+                'rgba(111, 66, 193, 0.6)', // Màu tím
+                'rgba(23, 162, 184, 0.6)', // Màu xanh lam
+                'rgba(253, 126, 20, 0.6)', // Màu cam
+                'rgba(108, 117, 125, 0.6)' // Màu xám
+            ],
+            borderColor: [
+                'rgba(255, 193, 7, 1)',
+                'rgba(111, 66, 193, 1)',
+                'rgba(23, 162, 184, 1)',
+                'rgba(253, 126, 20, 1)',
+                'rgba(108, 117, 125, 1)'
+            ],
+            borderWidth: 1
+        }]
+    };
+    new Chart(document.getElementById('vehicleTypePieChart').getContext('2d'), {
+        type: 'pie',
+        data: vehicleTypeData,
+        options: {
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: { enabled: true }
+            }
+        }
+    });
+
+    // Biểu đồ doughnut: Tỷ lệ xe đang đỗ/còn trống theo khu vực
+    {% for area in parking_area_usage %}
+    const parkingAreaUsageData_{{ forloop.counter }} = {
+        labels: ['Đang đỗ', 'Còn trống'],
+        datasets: [{
+            label: 'Tỷ lệ sử dụng',
+            data: [{{ area.occupied }}, {{ area.free }}],
+            backgroundColor: [
+                'rgba(253, 126, 20, 0.6)', // Màu cam
+                'rgba(40, 167, 69, 0.6)'   // Màu xanh lá
+            ],
+            borderColor: [
+                'rgba(253, 126, 20, 1)',
+                'rgba(40, 167, 69, 1)'
+            ],
+            borderWidth: 1
+        }]
+    };
+    new Chart(document.getElementById('parkingAreaUsageChart_{{ forloop.counter }}').getContext('2d'), {
+    type: 'doughnut',
+    data: parkingAreaUsageData_{{ forloop.counter }},
+    options: {
+        plugins: {
+            legend: { position: 'bottom' },
+            tooltip: { enabled: true }
+        }
+    }
+});
+
+    {% endfor %}
+});
+</script>
 {% endif %}
 {% endblock %}
